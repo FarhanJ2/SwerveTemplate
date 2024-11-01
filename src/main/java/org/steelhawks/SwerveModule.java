@@ -10,6 +10,8 @@ import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.units.AngleUnit;
+import edu.wpi.first.units.Units;
 import org.steelhawks.lib.Conversions;
 import org.steelhawks.lib.SwerveModuleConstants;
 
@@ -83,7 +85,7 @@ public class SwerveModule {
     }
 
     public Rotation2d getCANcoder() {
-        return Rotation2d.fromRotations(angleEncoder.getAbsolutePosition().getValue());
+        return Rotation2d.fromRotations(angleEncoder.getAbsolutePosition().getValueAsDouble());
     }
 
     public void resetToAbsolute() {
@@ -97,15 +99,15 @@ public class SwerveModule {
 
     public SwerveModuleState getState() {
         return new SwerveModuleState(
-                Conversions.RPSToMPS(mDriveMotor.getVelocity().getValue(), Constants.Swerve.WHEEL_CIRCUMFERENCE),
-                Rotation2d.fromRotations(mAngleMotor.getPosition().getValue())
+                Conversions.RPSToMPS(mDriveMotor.getVelocity().getValueAsDouble(), Constants.Swerve.WHEEL_CIRCUMFERENCE),
+                Rotation2d.fromRotations(mAngleMotor.getPosition().getValueAsDouble())
         );
     }
 
     public SwerveModulePosition getPosition() {
         return new SwerveModulePosition(
-                Conversions.rotationsToMeters(mDriveMotor.getPosition().getValue(), Constants.Swerve.WHEEL_CIRCUMFERENCE),
-                Rotation2d.fromRotations(mAngleMotor.getPosition().getValue())
+                Conversions.rotationsToMeters(mDriveMotor.getPosition().getValueAsDouble(), Constants.Swerve.WHEEL_CIRCUMFERENCE), //mDriveMotor.getPosition().getValue()
+                Rotation2d.fromRotations(mAngleMotor.getPosition().getValueAsDouble())
         );
     }
 

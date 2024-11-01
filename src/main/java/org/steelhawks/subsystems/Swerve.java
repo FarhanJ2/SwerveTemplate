@@ -4,9 +4,9 @@ package org.steelhawks.subsystems;
 import com.ctre.phoenix6.configs.Pigeon2Configuration;
 import com.ctre.phoenix6.hardware.Pigeon2;
 import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
-import com.pathplanner.lib.util.PIDConstants;
-import com.pathplanner.lib.util.ReplanningConfig;
+import com.pathplanner.lib.config.PIDConstants;
+import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -16,6 +16,9 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.units.AngleUnit;
+import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -34,7 +37,9 @@ public class Swerve extends SubsystemBase {
     public Pigeon2 gyro;
     public Field2d field;
 
+    /* Limelights/Cameras/Configs */
     private Limelight limelight;
+    private RobotConfig config;
 
     private double speedMultiplier = 1;
 
@@ -45,8 +50,6 @@ public class Swerve extends SubsystemBase {
     public boolean isSlowMode() {
         return speedMultiplier == Constants.Swerve.SLOW_MODE_MULTIPLIER;
     }
-
-    /* Limelights/Cameras */
 
     private final PIDController alignPID = new PIDController(
         Constants.Swerve.autoAlignKP,
@@ -71,35 +74,34 @@ public class Swerve extends SubsystemBase {
         alignPID.enableContinuousInput(0, 360);
         alignPID.setTolerance(1);
 
+        /* Make sure to set up the robot config in Pathplanner App */
+        try{
+            config = RobotConfig.fromGUISettings();
+        } catch (Exception e) {
+            // Handle exception as needed
+            e.printStackTrace();
+        }
+
         /* PathPlanner Configuration */
-        AutoBuilder.configureHolonomic(
-            this::getPose,
-                this::setPose,
-                this::getRobotRelativeSpeeds,
-                this::driveRobotRelative,
-                new HolonomicPathFollowerConfig(
-                        new PIDConstants(
-                                Constants.AutonConstants.TRANSLATION_KP,
-                                Constants.AutonConstants.TRANSLATION_KI,
-                                Constants.AutonConstants.TRANSLATION_KD
-                        ),
-                        new PIDConstants(
-                                Constants.AutonConstants.ROTATION_KP,
-                                Constants.AutonConstants.ROTATION_KI,
-                                Constants.AutonConstants.ROTATION_KD
-                        ),
-                        4.3,
-                        Constants.Swerve.TRACK_WIDTH / Math.sqrt(2),
-                        new ReplanningConfig()
+        AutoBuilder.configure(
+                this::getPose, // Robot pose supplier
+                this::setPose, // Method to reset odometry (will be called if your auto has a starting pose)
+                this::getRobotRelativeSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+                (speeds, feedforwards) -> driveRobotRelative(speeds), // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also, optionally outputs individual module feedforwards
+                new PPHolonomicDriveController( // PPHolonomicController is the built in path following controller for holonomic drive trains
+                        new PIDConstants(Constants.AutonConstants.TRANSLATION_KP, Constants.AutonConstants.TRANSLATION_KI, Constants.AutonConstants.TRANSLATION_KD), // Translation PID constants
+                        new PIDConstants(Constants.AutonConstants.ROTATION_KP, Constants.AutonConstants.ROTATION_KI, Constants.AutonConstants.ROTATION_KD) // Rotation PID constants
                 ),
+                config, // The robot configuration
                 () -> {
+                    // Boolean supplier that controls when the path will be mirrored for the red alliance
+                    // This will flip the path being followed to the red side of the field.
+                    // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+
                     var alliance = DriverStation.getAlliance();
-                    if (alliance.isPresent()) {
-                        return alliance.get() == DriverStation.Alliance.Red;
-                    }
-                    return false;
+                    return alliance.filter(value -> value == DriverStation.Alliance.Red).isPresent();
                 },
-                this
+                this // Reference to this subsystem to set requirements
         );
     }
 
@@ -157,7 +159,7 @@ public class Swerve extends SubsystemBase {
     }
 
     public Rotation2d getGyroYaw() {
-        return Rotation2d.fromDegrees(gyro.getYaw().getValue());
+        return Rotation2d.fromDegrees(gyro.getYaw().getValueAsDouble());
     }
 
     public ChassisSpeeds getRobotRelativeSpeeds() {
@@ -227,7 +229,7 @@ public class Swerve extends SubsystemBase {
 
         if (Robot.state != Robot.RobotState.AUTON || RobotContainer.s_Autos.getUseVision() && RobotContainer.addVisionMeasurement && (counter % 3 == 0)) { // run every 16 cycles
             /* Run your limelight pose estimators here */
-//            addLimelightToEstimator();
+//            addLimelightToEstimator(limelight);
         }
     }
 

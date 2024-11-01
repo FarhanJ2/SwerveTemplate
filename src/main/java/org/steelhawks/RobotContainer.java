@@ -72,10 +72,10 @@ public class RobotContainer {
     private void configureDefaultCommands() {
         s_Swerve.setDefaultCommand(
             new TeleopDrive(
-                    () -> -kDriverController.getLeftY(),
-                    () -> -kDriverController.getLeftX(),
-                    () -> -kDriverController.getRightX(),
-                    () -> true // field relative
+                () -> -kDriverController.getLeftY(),
+                () -> -kDriverController.getLeftX(),
+                () -> -kDriverController.getRightX(),
+                () -> true // field relative
             ));
     }
 

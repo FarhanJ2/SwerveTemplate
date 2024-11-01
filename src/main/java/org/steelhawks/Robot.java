@@ -28,16 +28,13 @@ public class Robot extends TimedRobot
 
     public static RobotState state = RobotState.DISABLED;
     
-    @Override
-    public void robotInit()
-    {
+    public Robot() {
         HAL.report(tResourceType.kResourceType_Language, tInstances.kLanguage_Kotlin, 0, WPILibVersion.Version);
         DriverStation.silenceJoystickConnectionWarning(true);
 
         // Initialize Robot Container
         new RobotContainer();
     }
-    
 
     int counter = 0;
     @Override
