@@ -1,11 +1,11 @@
 package org.steelhawks.commands.swerve;
 
-import org.steelhawks.Constants;
-import org.steelhawks.RobotContainer;
 import java.util.function.Supplier;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
+import org.steelhawks.subsystems.swerve.Swerve;
+import org.steelhawks.subsystems.swerve.KSwerve;
 
 import static org.steelhawks.lib.MathUtil.continuous180To360;
 
@@ -14,9 +14,9 @@ public class RotateToAngle extends Command {
     private final Supplier<Boolean> buttonPressed;
 
     private final PIDController alignPID = new PIDController(
-        Constants.Swerve.autoAlignKP,
-        Constants.Swerve.autoAlignKI,
-        Constants.Swerve.autoAlignKD
+        KSwerve.autoAlignKP,
+        KSwerve.autoAlignKI,
+        KSwerve.autoAlignKD
     );
 
     public RotateToAngle(Supplier<Double> requestedAngle) {
@@ -31,12 +31,12 @@ public class RotateToAngle extends Command {
         this.buttonPressed = buttonPressed;
         this.requestedAngle = requestedAngle;
 
-        addRequirements(RobotContainer.s_Swerve);
+        addRequirements(Swerve.getInstance());
     }
 
     @Override
     public void initialize() {
-        double robotHeading = continuous180To360(RobotContainer.s_Swerve.getHeading().getDegrees());
+        double robotHeading = continuous180To360(Swerve.getInstance().getHeading().getDegrees());
         double setpoint = (robotHeading + requestedAngle.get()) % 360;
 
         alignPID.setSetpoint(setpoint);
@@ -44,9 +44,9 @@ public class RotateToAngle extends Command {
 
     @Override
     public void execute() {
-        RobotContainer.s_Swerve.drive(
+        Swerve.getInstance().drive(
             new Translation2d(),
-            (RobotContainer.s_Swerve.isSlowMode() ? 5 : 1) * alignPID.calculate(continuous180To360(RobotContainer.s_Swerve.getHeading().getDegrees())),
+            (Swerve.getInstance().isSlowMode() ? 5 : 1) * alignPID.calculate(continuous180To360(Swerve.getInstance().getHeading().getDegrees())),
             true,
             false
         );
@@ -61,6 +61,6 @@ public class RotateToAngle extends Command {
 
     @Override
     public void end(boolean interrupted) {
-        RobotContainer.s_Swerve.stop();
+        Swerve.getInstance().stop();
     }
 }

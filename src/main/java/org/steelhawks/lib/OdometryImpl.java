@@ -9,24 +9,21 @@ import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
-import org.steelhawks.RobotContainer;
 import org.steelhawks.Constants;
+import org.steelhawks.subsystems.swerve.Swerve;
 
 public class OdometryImpl {
-    /** Creates a new OdometryImpl. */
-
-    public OdometryImpl() {}
 
     public double getDistance(Pose2d target) {
-        return RobotContainer.s_Swerve.getRelativePose().getTranslation().getDistance(target.getTranslation());
+        return Swerve.getInstance().getRelativePose().getTranslation().getDistance(target.getTranslation());
     }
 
     //This is assuming that the robot is directly facing the target object
     public double getTurnAngle(Pose2d target, double robotAngle) {
         double tx = target.getX();
         double ty = target.getY();
-        double rx = RobotContainer.s_Swerve.getPose().getX();
-        double ry = RobotContainer.s_Swerve.getPose().getY();
+        double rx = Swerve.getInstance().getPose().getX();
+        double ry = Swerve.getInstance().getPose().getY();
 
         double requestedAngle = Math.atan((ty - ry) / (tx - rx)) * (180/ Math.PI);
         double calculatedAngle = (180 - robotAngle + requestedAngle);
@@ -35,10 +32,10 @@ public class OdometryImpl {
     }
 
     public double getVisionPoseError(Limelight limelight) {
-        if(limelight == null || RobotContainer.s_Swerve.poseEstimator == null) return -1;
+        if(limelight == null || Swerve.getInstance().mPoseEstimator == null) return -1;
         Pose2d predictedPose = limelight.getVisionPredictedRobotPose();
         if (predictedPose != null) {
-            return Math.abs(RobotContainer.s_Swerve.poseEstimator.getEstimatedPosition().getTranslation().getDistance(predictedPose.getTranslation()));
+            return Math.abs(Swerve.getInstance().mPoseEstimator.getEstimatedPosition().getTranslation().getDistance(predictedPose.getTranslation()));
         }
         return -1;
     }
@@ -59,7 +56,7 @@ public class OdometryImpl {
         //added variable for predicted pose instead of calling function directly
         Pose2d predictedPose = limelight.getVisionPredictedRobotPose();
         if (isValidVisionMeasurement(limelight) && predictedPose != null) {
-            return new Pose2d(predictedPose.getTranslation(), RobotContainer.s_Swerve.getHeading());
+            return new Pose2d(predictedPose.getTranslation(), Swerve.getInstance().getHeading());
         }
         return null;
     }

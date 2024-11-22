@@ -1,19 +1,24 @@
 package org.steelhawks.commands;
 
+import edu.wpi.first.wpilibj2.command.button.CommandGenericHID;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.RunCommand;
-import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 
 
+/**
+ * Class to simplify controlling the vibration of controllers
+ *
+ * @author farhanj2
+ *
+ */
 public class VibrateController extends InstantCommand {
 
 
     private static final double DEFAULT_VIBRATE_TIME = 1;
     private final Timer timer = new Timer();
 
-    private final CommandXboxController controller;
+    private final CommandGenericHID controller;
     private final double intensity, seconds;
 
 
@@ -24,7 +29,7 @@ public class VibrateController extends InstantCommand {
      * @param intensity the intensity to rumble the controller at between 0.0 and 1.0
      * @param seconds the amount of time to vibrate the controller for
      */
-    public VibrateController(CommandXboxController controller, double intensity, double seconds) {
+    public VibrateController(CommandGenericHID controller, double intensity, double seconds) {
 
         this.controller = controller;
         this.intensity = intensity;
@@ -37,7 +42,7 @@ public class VibrateController extends InstantCommand {
      * @param controller the controller to vibrate
      * @param intensity the intensity to rumble the controller at between 0.0 and 1.0
      */
-    public VibrateController(CommandXboxController controller, double intensity) {
+    public VibrateController(CommandGenericHID controller, double intensity) {
         this(controller, intensity, DEFAULT_VIBRATE_TIME);
     }
 
@@ -46,7 +51,7 @@ public class VibrateController extends InstantCommand {
      *
      * @param controller the controller to vibrate
      */
-    public VibrateController(CommandXboxController controller) {
+    public VibrateController(CommandGenericHID controller) {
         this(controller, 1.0, DEFAULT_VIBRATE_TIME);
     }
 
@@ -66,6 +71,6 @@ public class VibrateController extends InstantCommand {
         timer.stop();
         timer.reset();
 
-        controller.getHID().setRumble(GenericHID.RumbleType.kLeftRumble, 0);
+        controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0);
     }
 }

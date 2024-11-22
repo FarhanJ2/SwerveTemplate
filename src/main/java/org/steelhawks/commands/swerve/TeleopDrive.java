@@ -5,7 +5,8 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import org.steelhawks.Constants;
-import org.steelhawks.RobotContainer;
+import org.steelhawks.subsystems.swerve.Swerve;
+import org.steelhawks.subsystems.swerve.KSwerve;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
@@ -20,7 +21,7 @@ public class TeleopDrive extends Command {
     private final BooleanSupplier fieldRelative;
 
     public TeleopDrive(DoubleSupplier translation, DoubleSupplier strafe, DoubleSupplier rotation, BooleanSupplier robotCentric) {
-        addRequirements(RobotContainer.s_Swerve);
+        addRequirements(Swerve.getInstance());
 
         this.translation = translation;
         this.strafe = strafe;
@@ -30,13 +31,13 @@ public class TeleopDrive extends Command {
 
     /* Use this for rotating to a pose/structure */
     private double getRotationSpeedFromPID(Pose2d target) {
-        double robotHeading = continuous180To360(RobotContainer.s_Swerve.getHeading().getDegrees());
-        double requestedAngle = RobotContainer.s_Swerve.calculateTurnAngle(target, RobotContainer.s_Swerve.getHeading().getDegrees() + 180);
+        double robotHeading = continuous180To360(Swerve.getInstance().getHeading().getDegrees());
+        double requestedAngle = Swerve.getInstance().calculateTurnAngle(target, Swerve.getInstance().getHeading().getDegrees() + 180);
         double setpoint = (robotHeading + requestedAngle) % 360;
 
-        RobotContainer.s_Swerve.getAlignController().setSetpoint(setpoint);
+        Swerve.getInstance().getAlignController().setSetpoint(setpoint);
 
-        return (RobotContainer.s_Swerve.isSlowMode() ? 5 : 1) * RobotContainer.s_Swerve.getAlignController().calculate(continuous180To360(RobotContainer.s_Swerve.getHeading().getDegrees()));
+        return (Swerve.getInstance().isSlowMode() ? 5 : 1) * Swerve.getInstance().getAlignController().calculate(continuous180To360(Swerve.getInstance().getHeading().getDegrees()));
     }
 
     @Override
@@ -45,10 +46,10 @@ public class TeleopDrive extends Command {
         double strafeValue = MathUtil.applyDeadband(strafe.getAsDouble(), Constants.Deadbands.DRIVE_DEADBAND);
         double rotationValue = MathUtil.applyDeadband(rotation.getAsDouble(), Constants.Deadbands.DRIVE_DEADBAND);
 
-        Translation2d multipliedTranslation = new Translation2d(translationValue, strafeValue).times(Constants.Swerve.MAX_SPEED);
-        double multipliedRotation = rotationValue * Constants.Swerve.MAX_ANGULAR_VELOCITY;
+        Translation2d multipliedTranslation = new Translation2d(translationValue, strafeValue).times(KSwerve.MAX_SPEED);
+        double multipliedRotation = rotationValue * KSwerve.MAX_ANGULAR_VELOCITY;
 
-        RobotContainer.s_Swerve.drive(
+        Swerve.getInstance().drive(
             multipliedTranslation,
             multipliedRotation,
             fieldRelative.getAsBoolean(),
@@ -58,6 +59,6 @@ public class TeleopDrive extends Command {
 
     @Override
     public void end(boolean interrupted) {
-        RobotContainer.s_Swerve.stop();
+        Swerve.getInstance().stop();
     }
 }

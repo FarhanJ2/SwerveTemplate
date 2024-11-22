@@ -9,13 +9,20 @@ import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 import edu.wpi.first.hal.HAL;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.WPILibVersion;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import org.littletonrobotics.junction.LogFileUtil;
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGReader;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
+import org.steelhawks.subsystems.LED;
 
-public class Robot extends TimedRobot
+public class Robot extends LoggedRobot
 {
     private Command autonomousCommand;
 
@@ -26,18 +33,45 @@ public class Robot extends TimedRobot
         TEST
     }
 
-    public static RobotState state = RobotState.DISABLED;
+    private static RobotState mState = RobotState.DISABLED;
+
+    private void setState(RobotState state) {
+        mState = state;
+        SmartDashboard.putString("robot/state", state.toString());
+    }
+
+    public static RobotState getState() {
+        return mState;
+    }
     
-    @Override
-    public void robotInit()
-    {
+    public Robot() {
         HAL.report(tResourceType.kResourceType_Language, tInstances.kLanguage_Kotlin, 0, WPILibVersion.Version);
         DriverStation.silenceJoystickConnectionWarning(true);
+
+        Logger.recordMetadata("Robot", "HawkRider"); // Set a metadata value
+
+        if (isReal() || !Constants.IN_REPLAY_MODE) {
+            Logger.addDataReceiver(new WPILOGWriter()); // Log to a USB stick ("/U/logs")
+            Logger.addDataReceiver(new NT4Publisher()); // Publish data to NetworkTables
+            new PowerDistribution(1, PowerDistribution.ModuleType.kRev); // Enables power distribution logging
+        } else {
+            setUseTiming(false); // Run as fast as possible
+
+            try {
+                String logPath = LogFileUtil.findReplayLog(); // Pull the replay log from AdvantageScope (or prompt the user)
+                Logger.setReplaySource(new WPILOGReader(logPath)); // Read replay log
+                Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim"))); // Save outputs to a new log
+            } catch (Exception e) {
+                DriverStation.reportWarning("No replay log found", false);
+            }
+        }
+
+        // Logger.disableDeterministicTimestamps() // See "Deterministic Timestamps" in the "Understanding Data Flow" page
+        Logger.start();
 
         // Initialize Robot Container
         new RobotContainer();
     }
-    
 
     int counter = 0;
     @Override
@@ -49,23 +83,22 @@ public class Robot extends TimedRobot
 
         /* Update SmartDashboard every 5 cycles (10 time a second) */
         if (counter % 5 == 0) {
-            SmartDashboard.putString("robot/state", state.toString());
-            SmartDashboard.putString("auton/auton selected", RobotContainer.s_Autos.getAutonName());
+            SmartDashboard.putString("auton/auton selected", Autos.getInstance().getAutonName());
         }
     }
     
     
     @Override
     public void disabledInit() {
-        state = RobotState.DISABLED;
+        setState(RobotState.DISABLED);
 
-        RobotContainer.s_LED.getRainbowCommand();
+        LED.getInstance().getRainbowCommand();
     }
     
     
     @Override
     public void disabledPeriodic() {
-        RobotContainer.s_LED.rainbow();
+        LED.getInstance().rainbow();
     }
     
     
@@ -75,13 +108,13 @@ public class Robot extends TimedRobot
     @Override
     public void autonomousInit()
     {
-        autonomousCommand = RobotContainer.s_Autos.getAutonomousCommand();
+        autonomousCommand = Autos.getInstance().getAutonomousCommand();
         
         if (autonomousCommand != null) {
             autonomousCommand.schedule();
         }
 
-        state = RobotState.AUTON;
+        setState(RobotState.AUTON);
     }
     
     
@@ -101,7 +134,7 @@ public class Robot extends TimedRobot
             autonomousCommand.cancel();
         }
 
-        state = RobotState.TELEOP;
+        setState(RobotState.TELEOP);
     }
     
     
@@ -117,7 +150,7 @@ public class Robot extends TimedRobot
     public void testInit()
     {
         CommandScheduler.getInstance().cancelAll();
-        state = RobotState.TEST;
+        setState(RobotState.TEST);
     }
     
     

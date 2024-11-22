@@ -70,15 +70,15 @@ public class Autos {
     }
 
     /* Change to the amount of autons we have */
-    private final DigitalInput[] kAutonSelector = {
+    private final DigitalInput[] mAutonSelector = {
         new DigitalInput(Constants.SelectorConstants.AUTON_PORT_1),
         new DigitalInput(Constants.SelectorConstants.AUTON_PORT_2),
         new DigitalInput(Constants.SelectorConstants.AUTON_PORT_3),
     };
 
     private int getSelector() {
-        for (int i = 0; i < kAutonSelector.length; i++) {
-            if (!kAutonSelector[i].get()) {
+        for (int i = 0; i < mAutonSelector.length; i++) {
+            if (!mAutonSelector[i].get()) {
                 return i;
             }
         }
@@ -86,8 +86,13 @@ public class Autos {
         return -1;
     }
 
+    private final static Autos INSTANCE = new Autos();
 
-    public Autos() {
+    public static Autos getInstance() {
+        return INSTANCE;
+    }
+
+    private Autos() {
         configureNamedCommands();
     }
 

@@ -6,6 +6,7 @@ import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.*;
+import org.steelhawks.Constants;
 
 public class LED extends SubsystemBase {
 
@@ -69,7 +70,13 @@ public class LED extends SubsystemBase {
         BACKWARD;
     }
 
-    public LED(int port, int length) {
+    private final static LED INSTANCE = new LED(Constants.LED.LED_PORT, Constants.LED.LED_STRIP_LENGTH);
+
+    public static LED getInstance() {
+        return INSTANCE;
+    }
+
+    private LED(int port, int length) {
         strip2Start = length / 2;
         stripLength = length / 2;
 
@@ -82,8 +89,22 @@ public class LED extends SubsystemBase {
         LEDStrip.start();
     }
 
+    /**
+     * A helper command that removes and cancels any existing default command before replacing it with a new one.
+     *
+     * @param defaultCommand the default command you want to set
+     */
+    public void setDefaultLighting(Command defaultCommand) {
+        if (getDefaultCommand() != null) {
+            getDefaultCommand().cancel();
+            removeDefaultCommand();
+        }
+
+        setDefaultCommand(defaultCommand);
+    }
+
     private void setColor(LEDColor color) {
-        for(int i = 0; i < LEDBuffer.getLength(); i++){
+        for (int i = 0; i < LEDBuffer.getLength(); i++) {
             LEDBuffer.setRGB(i, color.r, color.g, color.b);
         }
 
@@ -101,8 +122,7 @@ public class LED extends SubsystemBase {
 
         if (isOn) {
             stop();
-        }
-        else {
+        } else {
             setColor(color);
         }
     }
@@ -110,7 +130,7 @@ public class LED extends SubsystemBase {
     private void wave(LEDColor color) {
         for (int i = 0; i < stripLength; i++) {
             if ((i >= waveIndex && i < waveIndex + waveLength)
-                    || (waveIndex + waveLength > stripLength && i < (waveIndex + waveLength) % stripLength)) {
+                || (waveIndex + waveLength > stripLength && i < (waveIndex + waveLength) % stripLength)) {
                 this.LEDBuffer.setRGB(i, color.r, color.g, color.b);
                 this.LEDBuffer.setRGB(i + strip2Start, color.r, color.g, color.b);
             } else {
@@ -154,7 +174,7 @@ public class LED extends SubsystemBase {
     }
 
     private void fade(LEDColor color) {
-        for(int i = 0; i < LEDBuffer.getLength(); i++){
+        for (int i = 0; i < LEDBuffer.getLength(); i++) {
             LEDBuffer.setRGB(i, (int) (color.r * fadeMultiplier), (int) (color.g * fadeMultiplier), (int) (color.b * fadeMultiplier));
         }
 
@@ -193,6 +213,41 @@ public class LED extends SubsystemBase {
         rainbowStart %= 180;
     }
 
+    //////////////////////
+    /* Fill is untested */
+    //////////////////////
+
+    private boolean fillDirectionForward = true;
+    private int fillIndex = 0;
+
+    private void liquidFill(LEDColor color) {
+        // Clear LEDs
+        for (int i = 0; i < LEDBuffer.getLength(); i++) {
+            LEDBuffer.setRGB(i, 0, 0, 0);
+        }
+
+        // Light up LEDs up to the current index
+        for (int i = 0; i <= fillIndex; i++) {
+            LEDBuffer.setRGB(i, color.r, color.g, color.b);
+        }
+
+        // Update fill index based on direction
+        if (fillDirectionForward) {
+            fillIndex++;
+            if (fillIndex >= LEDBuffer.getLength() - 1) {
+                fillDirectionForward = false; // Reverse direction
+            }
+        } else {
+            fillIndex--;
+            if (fillIndex <= 0) {
+                fillDirectionForward = true; // Reverse direction
+            }
+        }
+
+        LEDStrip.setData(LEDBuffer);
+    }
+
+
     ///////////////////////
     /* COMMAND FACTORIES */
     ///////////////////////
@@ -216,28 +271,42 @@ public class LED extends SubsystemBase {
     /**
      * Constructs a command that flashes the LEDs. Most useful for indicators
      *
-     * @param color the color to set to
+     * @param color    the color to set to
      * @param interval the amount of times to flash
-     * @param time how long to do this sequence
+     * @param time     how long to do this sequence
      */
     public Command flashCommand(LEDColor color, double interval, double time) {
         return new ParallelDeadlineGroup(
-                new WaitCommand(time),
-                Commands.run(() -> this.pulse(color, interval), this)
+            new WaitCommand(time),
+            Commands.run(() -> this.pulse(color, interval), this)
+        );
+    }
+
+    /**
+     * Constructs a command that rapidly flashes the LEDs in a rainbow pattern
+     */
+    public Command rainbowFlashCommand() {
+        return new SequentialCommandGroup(
+            flashCommand(LEDColor.GREEN, 0.5, .2),
+            flashCommand(LEDColor.RED, 0.5, .2),
+            flashCommand(LEDColor.BLUE, 0.5, .2),
+            flashCommand(LEDColor.GREEN, 0.5, .2),
+            flashCommand(LEDColor.RED, 0.5, .2),
+            flashCommand(LEDColor.PURPLE, 0.5, .2)
         );
     }
 
     /**
      * Just like the flash command, this checks by condition instead of time
      *
-     * @param color the color to set to
-     * @param interval the amount of times to flash
+     * @param color     the color to set to
+     * @param interval  the amount of times to flash
      * @param condition the condition to check if true to flash
      */
     public Command flashUntilCommand(LEDColor color, double interval, BooleanSupplier condition) {
         return new ParallelDeadlineGroup(
-                new WaitUntilCommand(condition),
-                Commands.run(() -> this.pulse(color, interval), this)
+            new WaitUntilCommand(condition),
+            Commands.run(() -> this.pulse(color, interval), this)
         );
     }
 
@@ -264,6 +333,28 @@ public class LED extends SubsystemBase {
      */
     public Command bounceWaveCommand(LEDColor color) {
         return Commands.run(() -> this.bounceWave(color), this);
+    }
+
+    /**
+     * Creates a command that generates a "liquid fill" effect on the LED strip.
+     * Unlike the wave command, this effect bounces back at the end of the strip,
+     * filling and emptying the LEDs in sequence, giving the appearance of a liquid
+     * flowing back and forth.
+     *
+     * @param color the color to set for the liquid fill effect
+     * @return a command that continuously executes the liquid fill effect
+     *
+     * <p>
+     *  <b>Behavior:</b>
+     *  <ul>
+     *     <li>The LEDs will progressively light up from the beginning of the strip to the end.</li>
+     *     <li>Once the LEDs are fully lit, the effect reverses direction and progressively turns them off.</li>
+     *     <li>This cycle repeats, creating a continuous back-and-forth animation.</li>
+     *  </ul>
+     * </p>
+     */
+    public Command liquidFillCommand(LEDColor color) {
+        return Commands.run(() -> this.liquidFill(color), this);
     }
 
     /**
