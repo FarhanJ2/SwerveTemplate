@@ -9,7 +9,7 @@ public class SwerveModule {
 
     public int moduleNumber;
     private final ModuleIO io;
-    private final ModuleIO.ModuleIOInputs inputs = new ModuleIO.ModuleIOInputs();
+    private final ModuleIOInputsAutoLogged inputs = new ModuleIOInputsAutoLogged();
 
     public SwerveModule(int moduleNumber, ModuleIO io) {
         this.io = io;
@@ -36,15 +36,16 @@ public class SwerveModule {
         return io.getPosition();
     }
 
-    public double getVoltage() {
-        return io.getVoltage();
+    public double getDriveVoltage() {
+        return io.getDriveVoltage();
     }
 
-    public void updateInputs(SwerveModuleState desiredState, boolean isOpenLoop) {
-        inputs.desiredState = desiredState;
-        inputs.isOpenLoop = isOpenLoop;
-        io.updateInputs(inputs);
+    public void runSysId(double driveVoltage) {
+        io.setRawVoltage(driveVoltage);
+    }
 
-        Logger.processInputs("Inputs/swerve/mod" + moduleNumber, inputs);
+    public void updateInputs() {
+        io.updateInputs(inputs);
+        Logger.processInputs("Inputs/Swerve/Mod" + moduleNumber, inputs);
     }
 }

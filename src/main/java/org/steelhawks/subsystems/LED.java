@@ -70,7 +70,7 @@ public class LED extends SubsystemBase {
         BACKWARD;
     }
 
-    private final static LED INSTANCE = new LED(Constants.LED.LED_PORT, Constants.LED.LED_STRIP_LENGTH);
+    private final static LED INSTANCE = new LED(Constants.LEDConstants.LED_PORT, Constants.LEDConstants.LED_STRIP_LENGTH);
 
     public static LED getInstance() {
         return INSTANCE;
@@ -262,10 +262,10 @@ public class LED extends SubsystemBase {
     }
 
     /**
-     * Creates a rainbow lighting sequence. Requires to be in a periodic function to run.
+     * Creates a rainbow lighting sequence.
      */
-    public void getRainbowCommand() {
-        Commands.run(this::rainbow, this);
+    public Command getRainbowCommand() {
+        return Commands.run(this::rainbow, this);
     }
 
     /**

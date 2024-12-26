@@ -1,11 +1,36 @@
 package org.steelhawks;
 
+import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.PathPlannerAuto;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import org.steelhawks.Constants.*;
+import java.util.Map;
 
 public class Autos {
+
+    /** Add your NamedCommands here */
+    private static final Map<String, Command> mNamedCommands = Map.of(
+        "intake", Commands.print("Intaking"),
+        "shoot", Commands.print("Shooting")
+    );
+
+    /* Change to the amount of autons we have */
+    private final DigitalInput[] mAutonSelector = {
+        new DigitalInput(SelectorConstants.AUTON_PORT_1),
+        new DigitalInput(SelectorConstants.AUTON_PORT_2),
+        new DigitalInput(SelectorConstants.AUTON_PORT_3),
+    };
+
+    private final static Autos INSTANCE = new Autos();
+    public static Autos getInstance() {
+        return INSTANCE;
+    }
+
+    private Autos() {
+        NamedCommands.registerCommands(mNamedCommands);
+    }
 
     private enum AutonMode {
         /* Add your Autons here */
@@ -69,13 +94,6 @@ public class Autos {
         }
     }
 
-    /* Change to the amount of autons we have */
-    private final DigitalInput[] mAutonSelector = {
-        new DigitalInput(Constants.SelectorConstants.AUTON_PORT_1),
-        new DigitalInput(Constants.SelectorConstants.AUTON_PORT_2),
-        new DigitalInput(Constants.SelectorConstants.AUTON_PORT_3),
-    };
-
     private int getSelector() {
         for (int i = 0; i < mAutonSelector.length; i++) {
             if (!mAutonSelector[i].get()) {
@@ -84,16 +102,6 @@ public class Autos {
         }
 
         return -1;
-    }
-
-    private final static Autos INSTANCE = new Autos();
-
-    public static Autos getInstance() {
-        return INSTANCE;
-    }
-
-    private Autos() {
-        configureNamedCommands();
     }
 
     public Command getAutonomousCommand() {
@@ -107,7 +115,4 @@ public class Autos {
     public String getAutonName() {
         return AutonMode.getAutonName(getSelector());
     }
-
-    /* Add all NamedCommands used by Pathplanner here */
-    private void configureNamedCommands() {}
 }

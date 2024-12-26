@@ -44,9 +44,7 @@ public class OdometryImpl {
         if(limelight == null) return false;
         Pose2d predictedPose = limelight.getVisionPredictedRobotPose();
         if (predictedPose != null && (predictedPose.getX() != 0 && predictedPose.getY() != 0)) {
-            if ((limelight.getTagArea() > Constants.LimelightConstants.minAreaOfTag) /*|| limelight.getNumberOfTagsInView() > 1*/) {
-                return true;
-            }
+            return limelight.getTagArea() > Constants.LimelightConstants.minAreaOfTag;
         }
         return false;
     }
@@ -71,12 +69,12 @@ public class OdometryImpl {
         return null;
     }
 
-    // Angle offset should be passed in as degrees
+    /** Angle offset should be passed in as degrees */
     public Vector<N3> createStdDevs(double n1, double n2, double angleOffset) {
         return VecBuilder.fill(n1, n2, Units.degreesToRadians(angleOffset));
     }
 
-    // Returns standard deviations using tag area; there MUST be multiple tags in sight
+    /** Returns standard deviations using tag area; there MUST be multiple tags in sight */
     private Vector<N3> getCalculatedStdDevsFromDistanceMultipleTags(double area) {
         double xyStdDev = 0.3 / Math.pow(area, 2);
         double thetaStdDev = 99999 / area;

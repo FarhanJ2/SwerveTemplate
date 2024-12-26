@@ -3,15 +3,25 @@ package org.steelhawks.subsystems.swerve;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
+import com.pathplanner.lib.path.PathConstraints;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.Distance;
+import edu.wpi.first.units.Measure;
+import edu.wpi.first.units.Unit;
+import edu.wpi.first.units.Velocity;
+import org.steelhawks.CTREConfigs;
 import org.steelhawks.lib.COTSTalonFXSwerveConstants;
 import org.steelhawks.lib.SwerveModuleConstants;
 
-/** All constants for Swerve */
+/**
+ * All constants for Swerve
+ */
 public final class KSwerve {
+
+    public static final CTREConfigs CONFIGS = new CTREConfigs();
 
     public static final int PIGEON_ID = 0; // set up for your robot
     public static final COTSTalonFXSwerveConstants CHOSEN_MODULE = // configure with your own robot drivetrain
@@ -75,9 +85,14 @@ public final class KSwerve {
     public static final double driveKA = 0.23783;
 
     /* Swerve Profiling Values */
-    /** Meters per Second */
+    /**
+     * Meters per Second
+     */
     public static final double MAX_SPEED = 4.5;
-    /** Radians per Second */
+
+    /**
+     * Radians per Second
+     */
     public static final double MAX_ANGULAR_VELOCITY = 10.0;
 
     /* Neutral Modes */
@@ -87,6 +102,34 @@ public final class KSwerve {
     public static final double autoAlignKP = 0.07;
     public static final double autoAlignKI = 0;
     public static final double autoAlignKD = 0;
+
+    /**
+     * Pathfinding Constants for PathPlanner's Autobuilder Factory
+     */
+    public static final class PathfinderConstants {
+        /**
+         * Meters per second
+         */
+        public static final double MAX_VELOCITY = 2.0;
+        /**
+         * Meters per second squared
+         */
+        public static final double MAX_ACCELERATION = 3.0;
+        /**
+         * Radians per second
+         */
+        public static final double MAX_ANGULAR_VELOCITY = 2.0;
+        /**
+         * Radians per second squared
+         */
+        public static final double MAX_ANGULAR_ACCELERATION = 3.0;
+
+        public static final PathConstraints PATH_CONSTRAINTS = new PathConstraints(KSwerve.PathfinderConstants.MAX_VELOCITY,
+            KSwerve.PathfinderConstants.MAX_ACCELERATION,
+            KSwerve.PathfinderConstants.MAX_ANGULAR_VELOCITY,
+            KSwerve.PathfinderConstants.MAX_ANGULAR_ACCELERATION);
+    }
+
 
     /* Module Specific Constants */
     /* Front Left Module - Module 0 */

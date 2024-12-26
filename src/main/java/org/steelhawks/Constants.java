@@ -3,21 +3,48 @@ package org.steelhawks;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.RobotBase;
 
 public final class Constants {
+
+    /** The name of our robot. */
+    public static final String ROBOT_NAME = "";
     /** Enables tuning mode, which allows values to be changed on the fly in AdvantageScope */
     public static boolean TUNING_MODE = false;
     /** Enables whether simulation should play a replay of a real robot log. */
     public static boolean IN_REPLAY_MODE = false;
 
-    public static String CANIVORE_NAME = ""; // name this
-    public static String PIGEON_CAN_NAME = "";
+    /** The CAN loop name on Phoenix Tuner */
+    public static String CANIVORE_NAME = "";
+
+    /**
+     * This defines the runtime mode used by AdvantageKit. The mode is always "real" when running
+     * on a roboRIO. Change the value of "IN_REPLAY_MODE" to switch between "sim" (physics sim) and "replay"
+     * (log replay from a file).
+     * Right now, it is {@value #IN_REPLAY_MODE} that it will be in replay mode.
+     */
+    public static Mode CURRENT_MODE = RobotBase.isReal() ? Mode.REAL : IN_REPLAY_MODE ? Mode.REPLAY : Mode.SIM;
+
+    public enum Mode {
+        /** Running on a real robot. */
+        REAL,
+
+        /** Running a physics simulator. */
+        SIM,
+
+        /** Replaying from a log file. */
+        REPLAY
+    }
 
     public static final class OIConstants {
         public static final int DRIVER_CONTROLLER_PORT = 0;
         public static final int OPERATOR_CONTROLLER_PORT = 1;
     }
 
+    /** Auton Selector DIO Ports */
     public static final class SelectorConstants {
         public static final int AUTON_PORT_1 = 28;
         public static final int AUTON_PORT_2 = 29;
@@ -34,15 +61,21 @@ public final class Constants {
         }
     }
 
-    public static final class Deadbands {
-        public static double DRIVE_DEADBAND = 0.1;
+    public static final class FieldConstants {
+        public static final double FIELD_LENGTH = Units.inchesToMeters(651.223);
+        public static final double FIELD_WIDTH = Units.inchesToMeters(323.277);
     }
 
-    public static final class LED {
+    public static final class Deadbands {
+        public static final double DRIVE_DEADBAND = 0.1;
+    }
+
+    public static final class LEDConstants {
         public static final int LED_STRIP_LENGTH = 40;
         public static final int LED_PORT = 0;
     }
 
+    /** Limelight configs and names */
     public static class LimelightConstants {
         public static final String limelightShooter = "limelight-shooter";
         public static final String limelightArm = "limelight-arm";
@@ -56,7 +89,7 @@ public final class Constants {
         public static final int limelightArmTagPipeline = 0;
     }
 
-    /* You MUST set for your own robot */
+    /** Vision Estimates for Odometry Config */
     public static class PoseConfig {
         // Increase these numbers to trust your model's state estimates less.
         public static final double POSITION_STD_DEV_X = 0.1;

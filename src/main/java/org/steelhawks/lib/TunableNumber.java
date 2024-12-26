@@ -2,6 +2,7 @@ package org.steelhawks.lib;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import org.steelhawks.Constants;
+import org.steelhawks.Robot;
 
 import java.util.function.DoubleSupplier;
 
@@ -13,6 +14,8 @@ import java.util.function.DoubleSupplier;
  *
  */
 public class TunableNumber implements DoubleSupplier {
+    private static final String TABLE_KEY = "TunableNumbers/";
+
     private final String key;
     private double defaultValue;
     private double lastValue = defaultValue;
@@ -24,7 +27,7 @@ public class TunableNumber implements DoubleSupplier {
      * @param defaultValue Default tunable value
      */
     public TunableNumber(String dashboardKey, double defaultValue) {
-        this.key = "TunableNumbers/" + dashboardKey;
+        this.key = TABLE_KEY + dashboardKey;
         setDefault(defaultValue);
     }
 
@@ -53,7 +56,7 @@ public class TunableNumber implements DoubleSupplier {
      */
     public void setDefault(double defaultValue) {
         this.defaultValue = defaultValue;
-        if (Constants.TUNING_MODE) {
+        if (isTuningMode()) {
             // This makes sure the data is on NetworkTables but will not change it
             SmartDashboard.putNumber(key, SmartDashboard.getNumber(key, defaultValue));
         }
@@ -65,7 +68,7 @@ public class TunableNumber implements DoubleSupplier {
      * @return The current value
      */
     public double get() {
-        return Constants.TUNING_MODE ? SmartDashboard.getNumber(key, defaultValue) : defaultValue;
+        return isTuningMode() ? SmartDashboard.getNumber(key, defaultValue) : defaultValue;
     }
 
     /**
@@ -87,5 +90,9 @@ public class TunableNumber implements DoubleSupplier {
     @Override
     public double getAsDouble() {
         return get();
+    }
+
+    private boolean isTuningMode() {
+        return Constants.TUNING_MODE || Robot.getState() == Robot.RobotState.TEST;
     }
 }

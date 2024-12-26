@@ -1,17 +1,19 @@
 package org.steelhawks.subsystems.swerve;
 
 import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.util.Units;
 import org.steelhawks.Constants;
-import org.steelhawks.RobotContainer;
 import org.steelhawks.lib.Conversions;
 import org.steelhawks.lib.SwerveModuleConstants;
 
@@ -28,10 +30,22 @@ public class RealModule implements ModuleIO {
 
     /* drive motor control requests */
     private final DutyCycleOut driveDutyCycle = new DutyCycleOut(0);
-    private final VelocityVoltage driveVelocity = new VelocityVoltage(0);
+    private final VelocityVoltage driveVelocityVoltage = new VelocityVoltage(0);
+
+    /** Used for SYSID Characterization */
+    private final VoltageOut driveVoltageOut = new VoltageOut(0);
 
     /* angle motor control requests */
-    private final PositionVoltage anglePosition = new PositionVoltage(0);
+    private final PositionVoltage anglePositionVoltage = new PositionVoltage(0);
+
+    /* StatusSignals */
+    private final StatusSignal<Double> drivePosition;
+    private final StatusSignal<Double> driveVelocity;
+
+    private final StatusSignal<Double> anglePosition;
+    private final StatusSignal<Double> angleVelocity;
+
+    private boolean isOpenLoop = false;
 
     public RealModule(int moduleNumber, SwerveModuleConstants moduleConstants) {
         this.moduleNumber = moduleNumber;
@@ -39,16 +53,24 @@ public class RealModule implements ModuleIO {
 
         /* Angle Encoder Config */
         angleEncoder = new CANcoder(moduleConstants.getCancoderID(), Constants.CANIVORE_NAME);
-        angleEncoder.getConfigurator().apply(RobotContainer.configs.swerveCANcoderConfig);
+        angleEncoder.getConfigurator().apply(KSwerve.CONFIGS.swerveCANcoderConfig);
 
         /* Angle Motor Config */
         mAngleMotor = new TalonFX(moduleConstants.getAngleMotorID(), Constants.CANIVORE_NAME);
-        mAngleMotor.getConfigurator().apply(RobotContainer.configs.swerveAngleFXConfig);
+        mAngleMotor.getConfigurator().apply(KSwerve.CONFIGS.swerveAngleFXConfig);
 
         /* Drive Motor Config */
         mDriveMotor = new TalonFX(moduleConstants.getDriveMotorID(), Constants.CANIVORE_NAME);
-        mDriveMotor.getConfigurator().apply(RobotContainer.configs.swerveDriveFXConfig);
+        mDriveMotor.getConfigurator().apply(KSwerve.CONFIGS.swerveDriveFXConfig);
         mDriveMotor.getConfigurator().setPosition(0.0);
+
+        drivePosition = mDriveMotor.getPosition();
+        driveVelocity = mDriveMotor.getVelocity();
+
+
+        anglePosition = mAngleMotor.getPosition();
+        angleVelocity = mAngleMotor.getVelocity();
+
 
         configureStatusFrameRates();
     }
@@ -70,8 +92,9 @@ public class RealModule implements ModuleIO {
 
     @Override
     public void setDesiredState(SwerveModuleState desiredState, boolean isOpenLoop) {
+        this.isOpenLoop = isOpenLoop;
         desiredState = SwerveModuleState.optimize(desiredState, getState().angle);
-        mAngleMotor.setControl(anglePosition.withPosition(desiredState.angle.getRotations()));
+        mAngleMotor.setControl(anglePositionVoltage.withPosition(desiredState.angle.getRotations()));
         setSpeed(desiredState, isOpenLoop);
     }
 
@@ -81,9 +104,9 @@ public class RealModule implements ModuleIO {
             driveDutyCycle.Output = desiredState.speedMetersPerSecond / KSwerve.MAX_SPEED;
             mDriveMotor.setControl(driveDutyCycle);
         } else {
-            driveVelocity.Velocity = Conversions.MPSToRPS(desiredState.speedMetersPerSecond, KSwerve.WHEEL_CIRCUMFERENCE);
-            driveVelocity.FeedForward = driveFeedForward.calculate(desiredState.speedMetersPerSecond);
-            mDriveMotor.setControl(driveVelocity);
+            driveVelocityVoltage.Velocity = Conversions.MPSToRPS(desiredState.speedMetersPerSecond, KSwerve.WHEEL_CIRCUMFERENCE);
+            driveVelocityVoltage.FeedForward = driveFeedForward.calculate(desiredState.speedMetersPerSecond);
+            mDriveMotor.setControl(driveVelocityVoltage);
         }
     }
 
@@ -98,7 +121,13 @@ public class RealModule implements ModuleIO {
     }
 
     @Override
-    public double getVoltage() {
+    public void setRawVoltage(double driveVoltage) {
+        driveVoltageOut.Output = driveVoltage;
+        mDriveMotor.setControl(driveVoltageOut);
+    }
+
+    @Override
+    public double getDriveVoltage() {
         return mDriveMotor.getMotorVoltage().getValueAsDouble() + mAngleMotor.getMotorVoltage().getValueAsDouble();
     }
 
@@ -116,5 +145,16 @@ public class RealModule implements ModuleIO {
             Conversions.rotationsToMeters(mDriveMotor.getPosition().getValue(), KSwerve.WHEEL_CIRCUMFERENCE),
             Rotation2d.fromRotations(mAngleMotor.getPosition().getValue())
         );
+    }
+
+    @Override
+    public void updateInputs(ModuleIOInputs inputs) {
+        inputs.driveAppliedVoltage = getDriveVoltage();
+        inputs.drivePositionRads = Units.rotationsToRadians(drivePosition.getValueAsDouble());
+        inputs.driveVelocityRadsPerSec = Units.rotationsToRadians(driveVelocity.getValueAsDouble());
+        inputs.anglePosition = Rotation2d.fromRadians(Units.rotationsToRadians(anglePosition.getValueAsDouble()));
+        inputs.angleVelocityRadsPerSec = Units.rotationsToRadians(angleVelocity.getValueAsDouble());
+        inputs.desiredState = getState();
+        inputs.isOpenLoop = isOpenLoop;
     }
 }

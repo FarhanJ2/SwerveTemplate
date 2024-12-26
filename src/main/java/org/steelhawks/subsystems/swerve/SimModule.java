@@ -61,7 +61,7 @@ public class SimModule implements ModuleIO {
     }
 
     @Override
-    public double getVoltage() {
+    public double getDriveVoltage() {
         return 0;
     }
 }

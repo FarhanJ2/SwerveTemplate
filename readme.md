@@ -75,3 +75,8 @@ SwerveTemplate/
 
 ### `src/test/java`
 - **Testing**: Contains unit tests or simulation-based tests, allowing verification of subsystem and command behavior in a safe environment.
+
+# Important Notes
+<p>When you make a clone of this repo, make sure to change the following.</p>
+<p>1. Change the CANIVORE_NAME in Constants.java to your CAN loop name.</p>
+<p>2. Carefully redo ALL constants, including a redo of all vision constants.</p>
